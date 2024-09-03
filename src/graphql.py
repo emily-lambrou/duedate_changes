@@ -204,13 +204,15 @@ def filter_issues_with_due_dates(issues, duedate_field_name):
     filtered_issues = []
     for issue in issues:
         field_value = issue.get('fieldValueByName')
-        if field_value:  # Ensure field_value is not None
-            due_date = field_value.get('date')
-            if due_date:  # Only include issues with a due date
-                filtered_issues.append(issue)
+        if field_value is None:
+            logging.debug(f"Missing 'fieldValueByName' in issue: {issue}")
+            continue
+        due_date = field_value.get('date')
+        if due_date:  # Only include issues with a due date
+            filtered_issues.append(issue)
+        else:
+            logging.debug(f"Issue without due date: {issue}")
     return filtered_issues
-
-
 
 
 def get_due_date_changes(issues, due_date_history):
