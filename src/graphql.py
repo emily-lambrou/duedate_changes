@@ -184,9 +184,17 @@ def load_due_date_history(filename='due_date_history.json'):
     """
     try:
         with open(filename, 'r') as f:
-            return json.load(f)
+            content = f.read().strip()
+            if not content:
+                # Return an empty dictionary if the file is empty
+                return {}
+            return json.loads(content)
     except FileNotFoundError:
         # Return an empty dictionary if the file does not exist
+        return {}
+    except json.JSONDecodeError as e:
+        # Handle JSON decoding error
+        logging.error(f"Error decoding JSON from {filename}: {e}")
         return {}
 
 def save_due_date_history(due_date_history, filename='due_date_history.json'):
