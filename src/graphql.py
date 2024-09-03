@@ -171,6 +171,35 @@ def get_project_issues(owner, owner_type, project_number, duedate_field_name, fi
 
     return issues
 
+def load_due_date_history(filename='due_date_history.json'):
+    """
+    Load the due date history from a JSON file.
+
+    Args:
+        filename (str): The name of the file to load the history from.
+
+    Returns:
+        dict: A dictionary with issue IDs as keys and due dates as values.
+    """
+    try:
+        with open(filename, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        # Return an empty dictionary if the file does not exist
+        return {}
+
+def save_due_date_history(due_date_history, filename='due_date_history.json'):
+    """
+    Save the due date history to a JSON file.
+
+    Args:
+        due_date_history (dict): A dictionary with issue IDs as keys and due dates as values.
+        filename (str): The name of the file to save the history to.
+    """
+    with open(filename, 'w') as f:
+        json.dump(due_date_history, f, indent=4)
+
+
 def filter_issues_with_due_dates(issues, duedate_field_name):
     filtered_issues = []
     for issue in issues:
@@ -178,15 +207,6 @@ def filter_issues_with_due_dates(issues, duedate_field_name):
         if due_date:  # Only include issues with a due date
             filtered_issues.append(issue)
     return filtered_issues
-
-
-
-
-
-
-
-
-
 
 
 def add_issue_comment(issueId, comment):
@@ -219,58 +239,3 @@ def add_issue_comment(issueId, comment):
     except requests.RequestException as e:
         logging.error(f"Request error: {e}")
         return {}
-
-def get_issue_comments(issue_id):
-    query = """
-    query GetIssueComments($issueId: ID!) {
-        node(id: $issueId) {
-            ... on Issue {
-                comments(first: 100) {
-                    nodes {
-                        body
-                        createdAt
-                        author {
-                            login
-                        }
-                    }
-                    pageInfo {
-                        endCursor
-                        hasNextPage
-                    }
-                }
-            }
-        }
-    }
-    """
-
-    variables = {
-        'issueId': issue_id
-    }
-
-    try:
-        response = requests.post(
-            config.api_endpoint,
-            json={"query": query, "variables": variables},
-            headers={"Authorization": f"Bearer {config.gh_token}"}
-        )
-        
-        data = response.json()
-
-        if 'errors' in data:
-            logging.error(f"GraphQL query errors: {data['errors']}")
-            return []
-
-        comments_data = data.get('data', {}).get('node', {}).get('comments', {})
-        comments = comments_data.get('nodes', [])
-
-        # Handle pagination if there are more comments
-        pageinfo = comments_data.get('pageInfo', {})
-        if pageinfo.get('hasNextPage'):
-            next_page_comments = get_issue_comments(issue_id, after=pageinfo.get('endCursor'))
-            comments.extend(next_page_comments)
-
-        return comments
-
-    except requests.RequestException as e:
-        logging.error(f"Request error: {e}")
-        return []
