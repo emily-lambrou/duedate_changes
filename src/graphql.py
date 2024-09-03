@@ -203,10 +203,13 @@ def save_due_date_history(due_date_history, filename='due_date_history.json'):
 def filter_issues_with_due_dates(issues, duedate_field_name):
     filtered_issues = []
     for issue in issues:
-        due_date = issue.get('fieldValueByName', {}).get('date')
-        if due_date:  # Only include issues with a due date
-            filtered_issues.append(issue)
+        field_value = issue.get('fieldValueByName')
+        if field_value:  # Ensure field_value is not None
+            due_date = field_value.get('date')
+            if due_date:  # Only include issues with a due date
+                filtered_issues.append(issue)
     return filtered_issues
+
 
 
 
