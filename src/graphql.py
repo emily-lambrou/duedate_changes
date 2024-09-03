@@ -171,6 +171,22 @@ def get_project_issues(owner, owner_type, project_number, duedate_field_name, fi
 
     return issues
 
+def filter_issues_with_due_dates(issues, duedate_field_name):
+    filtered_issues = []
+    for issue in issues:
+        due_date = issue.get('fieldValueByName', {}).get('date')
+        if due_date:  # Only include issues with a due date
+            filtered_issues.append(issue)
+    return filtered_issues
+
+
+
+
+
+
+
+
+
 
 
 def add_issue_comment(issueId, comment):
