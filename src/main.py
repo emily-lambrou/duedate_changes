@@ -17,7 +17,7 @@ def notify_due_date_changes():
         logger.info('No issues found')
         return
 
-    issues_with_due_dates = filter_issues_with_due_dates(issues, config.duedate_field_name)
+    issues_with_due_dates = graphql.filter_issues_with_due_dates(issues, config.duedate_field_name)
     changes = graphql.get_due_date_changes(issues_with_due_dates, due_date_history)
 
     for issue_id, new_due_date in changes:
