@@ -209,6 +209,37 @@ def filter_issues_with_due_dates(issues, duedate_field_name):
     return filtered_issues
 
 
+
+def get_due_date_changes(issues, due_date_history):
+    """
+    Compare the current due dates of issues with previously recorded due dates and identify changes.
+
+    Args:
+        issues (list): List of issues where each issue is a dictionary with due date information.
+        due_date_history (dict): Dictionary where keys are issue IDs and values are previously recorded due dates.
+
+    Returns:
+        list: List of tuples where each tuple contains an issue ID and its new due date if the due date has changed.
+    """
+    changes = []
+
+    for issue in issues:
+        issue_id = issue.get('id')
+        new_due_date = issue.get('fieldValueByName', {}).get('date')
+        old_due_date = due_date_history.get(issue_id)
+
+        # Check if there is a change in due date
+        if new_due_date != old_due_date:
+            changes.append((issue_id, new_due_date))
+
+    # Update the due date history with the current due dates
+    updated_due_date_history = {issue_id: new_due_date for issue_id, new_due_date in changes}
+    save_due_date_history({**due_date_history, **updated_due_date_history})
+
+    return changes
+
+
+
 def add_issue_comment(issueId, comment):
     mutation = """
     mutation AddIssueComment($issueId: ID!, $comment: String!) {
