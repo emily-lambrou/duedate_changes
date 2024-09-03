@@ -5,7 +5,6 @@ import utils
 import graphql
 
 def notify_due_date_changes():
-    due_date_history = graphql.load_due_date_history()
     issues = graphql.get_project_issues(
         owner=config.repository_owner,
         owner_type=config.repository_owner_type,
@@ -17,15 +16,21 @@ def notify_due_date_changes():
         logger.info('No issues found')
         return
 
+    # Filter issues with due dates
     issues_with_due_dates = graphql.filter_issues_with_due_dates(issues, config.duedate_field_name)
-    changes = graphql.get_due_date_changes(issues_with_due_dates, due_date_history)
 
-    for issue_id, new_due_date in changes:
-        comment = f"The due date has been updated to {new_due_date}."
+    # Iterate over the filtered issues and handle them
+    for issue in issues_with_due_dates:
+        issue_id = issue.get('id')
+        due_date = issue.get('fieldValueByName', {}).get('date')
+
+        # Directly notify about the due date
+        comment = f"The current due date is {due_date}."
         if not config.dry_run:
             graphql.add_issue_comment(issue_id, comment)
 
-        logger.info(f'Comment added to issue with ID {issue_id}. Due date updated to {new_due_date}')
+        logger.info(f'Comment added to issue with ID {issue_id}. Due date is {due_date}')
+
 
 
 def main():
