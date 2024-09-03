@@ -3,6 +3,7 @@ import requests
 import logging
 import config
 import utils
+import json
 
 def get_repo_issues(owner, repository, duedate_field_name, after=None, issues=None):
     query = """
