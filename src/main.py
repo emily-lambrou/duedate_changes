@@ -46,8 +46,7 @@ def notify_due_date_changes():
             continue
         
         expected_comment = f"The Due Date is updated to: {due_date_obj.strftime('%b %d, %Y')}."
-        logger.info(f'The expected comment is: {expected_comment}')
- 
+      
         # Check if the comment already exists
         if not utils.check_comment_exists(issue_id, expected_comment):
             if config.notification_type == 'comment':
