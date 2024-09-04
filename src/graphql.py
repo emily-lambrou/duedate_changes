@@ -79,6 +79,63 @@ def get_repo_issues(owner, repository, duedate_field_name, after=None, issues=No
 
     return issues
 
+
+def get_all_issue_comments(issue_id):
+    """
+    Retrieve all comments from an issue.
+
+    Args:
+        issue_id (str): The ID of the issue.
+
+    Returns:
+        list: A list of comment bodies.
+    """
+    query = """
+    query GetAllIssueComments($issueId: ID!, $after: String) {
+      node(id: $issueId) {
+        ... on Issue {
+          comments(first: 100, after: $after) {
+            nodes {
+              body
+            }
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
+          }
+        }
+      }
+    }
+    """
+
+    variables = {
+        'issueId': issue_id,
+        'after': None
+    }
+
+    comments = []
+    while True:
+        response = requests.post(
+            config.api_endpoint,
+            json={"query": query, "variables": variables},
+            headers={"Authorization": f"Bearer {config.gh_token}"}
+        )
+
+        if response.json().get('errors'):
+            logging.error(response.json().get('errors'))
+            return []
+
+        nodes = response.json().get('data').get('node').get('comments').get('nodes')
+        comments.extend([comment.get('body') for comment in nodes])
+
+        page_info = response.json().get('data').get('node').get('comments').get('pageInfo')
+        if page_info.get('hasNextPage'):
+            variables['after'] = page_info.get('endCursor')
+        else:
+            break
+
+    return comments
+
 def get_project_issues(owner, owner_type, project_number, duedate_field_name, filters=None, after=None, issues=None):
     query = f"""
     query GetProjectIssues($owner: String!, $projectNumber: Int!, $duedate: String!, $after: String)  {{
@@ -87,7 +144,7 @@ def get_project_issues(owner, owner_type, project_number, duedate_field_name, fi
               id
               title
               number
-              items(first: 100,after: $after) {{
+              items(first: 100, after: $after) {{
                 nodes {{
                   id
                   fieldValueByName(name: $duedate) {{
@@ -103,7 +160,7 @@ def get_project_issues(owner, owner_type, project_number, duedate_field_name, fi
                       number
                       state
                       url
-                      assignees(first:20) {{
+                      assignees(first: 20) {{
                         nodes {{
                           name
                           email
@@ -114,11 +171,11 @@ def get_project_issues(owner, owner_type, project_number, duedate_field_name, fi
                   }}
                 }}
                 pageInfo {{
-                endCursor
-                hasNextPage
-                hasPreviousPage
-              }}
-              totalCount
+                  endCursor
+                  hasNextPage
+                  hasPreviousPage
+                }}
+                totalCount
               }}
             }}
           }}
@@ -139,12 +196,10 @@ def get_project_issues(owner, owner_type, project_number, duedate_field_name, fi
     )
 
     if response.json().get('errors'):
-        print(response.json().get('errors'))
+        logging.error(response.json().get('errors'))
+        return []
 
-    pageinfo = response.json().get('data').get(owner_type).get('projectV2').get('items').get('pageInfo')
-    if issues is None:
-        issues = []
-
+    page_info = response.json().get('data').get(owner_type).get('projectV2').get('items').get('pageInfo')
     nodes = response.json().get('data').get(owner_type).get('projectV2').get('items').get('nodes')
 
     if filters:
@@ -152,19 +207,18 @@ def get_project_issues(owner, owner_type, project_number, duedate_field_name, fi
         for node in nodes:
             if filters.get('open_only') and node['content'].get('state') != 'OPEN':
                 continue
-           
             filtered_issues.append(node)
-
         nodes = filtered_issues
 
-    issues = issues + nodes
+    issues = issues or []
+    issues += nodes
 
-    if pageinfo.get('hasNextPage'):
+    if page_info.get('hasNextPage'):
         return get_project_issues(
             owner=owner,
             owner_type=owner_type,
             project_number=project_number,
-            after=pageinfo.get('endCursor'),
+            after=page_info.get('endCursor'),
             filters=filters,
             issues=issues,
             duedate_field_name=duedate_field_name
@@ -172,89 +226,7 @@ def get_project_issues(owner, owner_type, project_number, duedate_field_name, fi
 
     return issues
 
-def load_due_date_history(filename='due_date_history.json'):
-    """
-    Load the due date history from a JSON file.
-
-    Args:
-        filename (str): The name of the file to load the history from.
-
-    Returns:
-        dict: A dictionary with issue IDs as keys and due dates as values.
-    """
-    try:
-        with open(filename, 'r') as f:
-            content = f.read().strip()
-            if not content:
-                # Return an empty dictionary if the file is empty
-                return {}
-            return json.loads(content)
-    except FileNotFoundError:
-        # Return an empty dictionary if the file does not exist
-        return {}
-    except json.JSONDecodeError as e:
-        # Handle JSON decoding error
-        logging.error(f"Error decoding JSON from {filename}: {e}")
-        return {}
-
-def save_due_date_history(due_date_history, filename='due_date_history.json'):
-    """
-    Save the due date history to a JSON file.
-
-    Args:
-        due_date_history (dict): A dictionary with issue IDs as keys and due dates as values.
-        filename (str): The name of the file to save the history to.
-    """
-    with open(filename, 'w') as f:
-        json.dump(due_date_history, f, indent=4)
-
-
-def filter_issues_with_due_dates(issues, duedate_field_name):
-    filtered_issues = []
-    for issue in issues:
-        field_value = issue.get('fieldValueByName')
-        if field_value is None:
-            logging.debug(f"Missing 'fieldValueByName' in issue: {issue}")
-            continue
-        due_date = field_value.get('date')
-        if due_date:  # Only include issues with a due date
-            filtered_issues.append(issue)
-        else:
-            logging.debug(f"Issue without due date: {issue}")
-    return filtered_issues
-
-
-def get_due_date_changes(issues, due_date_history):
-    """
-    Compare the current due dates of issues with previously recorded due dates and identify changes.
-
-    Args:
-        issues (list): List of issues where each issue is a dictionary with due date information.
-        due_date_history (dict): Dictionary where keys are issue IDs and values are previously recorded due dates.
-
-    Returns:
-        list: List of tuples where each tuple contains an issue ID and its new due date if the due date has changed.
-    """
-    changes = []
-
-    for issue in issues:
-        issue_id = issue.get('id')
-        new_due_date = issue.get('fieldValueByName', {}).get('date')
-        old_due_date = due_date_history.get(issue_id)
-
-        # Check if there is a change in due date
-        if new_due_date != old_due_date:
-            changes.append((issue_id, new_due_date))
-
-    # Update the due date history with the current due dates
-    updated_due_date_history = {issue_id: new_due_date for issue_id, new_due_date in changes}
-    save_due_date_history({**due_date_history, **updated_due_date_history})
-
-    return changes
-
-
-
-def add_issue_comment(issueId, comment):
+def add_issue_comment(issue_id, comment):
     mutation = """
     mutation AddIssueComment($issueId: ID!, $comment: String!) {
         addComment(input: {subjectId: $issueId, body: $comment}) {
@@ -264,7 +236,7 @@ def add_issue_comment(issueId, comment):
     """
 
     variables = {
-        'issueId': issueId,
+        'issueId': issue_id,
         'comment': comment
     }
 
