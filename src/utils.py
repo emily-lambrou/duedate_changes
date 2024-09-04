@@ -2,7 +2,7 @@ import graphql
 import config
 from logger import logger
 
-def prepare_duedate_comment(issue: dict, assignees: dict), due_date:
+def prepare_duedate_comment(issue: dict, assignees: dict, due_date):
     """
     Prepare the comment from the given arguments and return it
     """
