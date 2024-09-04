@@ -43,7 +43,7 @@ def notify_due_date_changes():
         comments = graphql.get_all_issue_comments(issue_id)
 
         # Prepare the expected comment text
-        expected_comment = f"The due date is updated to: {due_date}"
+        expected_comment = f"The due date is updated to: {due_date}."
 
         # Check if the due date is already mentioned in any comment
         if any(expected_comment in comment for comment in comments):
