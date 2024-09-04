@@ -22,7 +22,7 @@ def prepare_duedate_comment(issue: dict, assignees: dict, due_date):
 
 def check_comment_exists(issue_title, expected_comment):
     """Check if the comment already exists on the issue."""
-    comments = graphql.get_issue_comments(issue_title)
+    comments = graphql.get_issue_comments(issue_id)
     for comment in comments:
         if expected_comment in comment.get('body', ''):
             return True
