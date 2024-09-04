@@ -14,7 +14,7 @@ def prepare_duedate_comment(issue: dict, assignees: dict, due_date):
     else:
         logger.info(f'No assignees found for issue #{issue["number"]}')
 
-    comment += f'The Due Date is updated to: {due_date}.'
+    comment += f'The Due Date is updated to: {due_date.strftime("%b %d, %Y")}.'
     logger.info(f'Issue {issue["title"]} | {comment}')
 
     return comment
