@@ -2,7 +2,7 @@ import graphql
 import config
 from logger import logger
 
-def prepare_duedate_comment(issue: dict, assignees: dict, due_date):
+def prepare_duedate_comment(issue: dict, assignees: dict):
     """
     Prepare the comment from the given arguments and return it
     """
@@ -14,8 +14,7 @@ def prepare_duedate_comment(issue: dict, assignees: dict, due_date):
     else:
         logger.info(f'No assignees found for issue #{issue["number"]}')
 
-    comment += f'The Due Date is updated to {due_date}.'
+    comment += f'The Due Date is updated.'
     logger.info(f'Issue {issue["title"]} | {comment}')
 
     return comment
-
