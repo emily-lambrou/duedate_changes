@@ -45,7 +45,7 @@ def notify_due_date_changes():
             logger.info(f'No due date found for issue {issue_title}')
             continue
         
-        expected_comment = f"The due date is updated to: {due_date}."
+        expected_comment = f"The due date is updated to: {due_date_obj}."
  
         # Check if the comment already exists
         if not utils.check_comment_exists(issue_id, expected_comment):
