@@ -1,6 +1,7 @@
 import graphql
 import config
 from logger import logger
+from datetime import datetime, timedelta
 
 def prepare_duedate_comment(issue: dict, assignees: dict, due_date):
     """
