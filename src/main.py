@@ -43,7 +43,7 @@ def notify_due_date_changes():
         expected_comment = f"The due date is updated to: {due_date}."
  
         # Check if the comment already exists
-        if not utils.check_comment_exists(issue_id, comment_text):
+        if not utils.check_comment_exists(issue_title, comment_text):
             if config.notification_type == 'comment':
                 # Prepare the notification content
                 comment = utils.prepare_duedate_comment(
