@@ -34,6 +34,7 @@ def notify_due_date_changes():
 
         due_date = issue.get('fieldValueByName', {}).get('date')
         issue_title = issue['title']
+        issue_id = issue['id']
      
         if not due_date:
             logger.info(f'No due date found for issue {issue_title}')
@@ -42,7 +43,7 @@ def notify_due_date_changes():
         expected_comment = f"The due date is updated to: {due_date}."
  
         # Check if the comment already exists
-        if not utils.check_comment_exists(issue_title, comment_text):
+        if not utils.check_comment_exists(issue_id, comment_text):
             if config.notification_type == 'comment':
                 # Prepare the notification content
                 comment = utils.prepare_duedate_comment(
@@ -53,7 +54,7 @@ def notify_due_date_changes():
                 
                 if not config.dry_run:
                     # Add the comment to the issue
-                    graphql.add_issue_comment( issue_title, comment)    
+                    graphql.add_issue_comment(issue_id, comment)    
                 logger.info(f'Comment added to issue with title {issue_title}. Due date is {due_date}')
 
 
