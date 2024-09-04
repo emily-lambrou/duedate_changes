@@ -5,22 +5,37 @@ import utils
 import graphql
 
 def notify_due_date_changes():
-    issues = graphql.get_project_issues(
-        owner=config.repository_owner,
-        owner_type=config.repository_owner_type,
-        project_number=config.project_number,
-        duedate_field_name=config.duedate_field_name
-    )
+    if config.is_enterprise:
+        issues = graphql.get_project_issues(
+            owner=config.repository_owner,
+            owner_type=config.repository_owner_type,
+            project_number=config.project_number,
+            duedate_field_name=config.duedate_field_name
+            filters={'open_only': True}
+        )
+    else:
+        # Get the issues
+        issues = graphql.get_repo_issues(
+            owner=config.repository_owner,
+            repository=config.repository_name,
+            duedate_field_name=config.duedate_field_name
+        )
 
+    # Check if there are issues available
     if not issues:
-        logger.info('No issues found')
+        logger.info('No issues has been found')
         return
 
-    # Iterate over the project issues and handle them
-    for issue in issues:
-        issue_id = issue.get('id')
-        due_date = issue.get('fieldValueByName', {}).get('date')
+    for projectItem in issues:
+        issue = projectItem['content']
 
+        # Get the list of assignees
+        assignees = issue['assignees']['nodes']
+
+        issue_id = issue['id']
+
+        due_date = issue.get('fieldValueByName', {}).get('date')
+    
         # Get all comments on the issue
         comments = graphql.get_all_issue_comments(issue_id)
         expected_comment = f"The due date is updated to {due_date}."
