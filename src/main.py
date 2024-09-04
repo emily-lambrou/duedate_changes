@@ -16,11 +16,8 @@ def notify_due_date_changes():
         logger.info('No issues found')
         return
 
-    # Filter issues with due dates
-    issues_with_due_dates = graphql.filter_issues_with_due_dates(issues, config.duedate_field_name)
-
-    # Iterate over the filtered issues and handle them
-    for issue in issues_with_due_dates:
+    # Iterate over the project issues and handle them
+    for issue in issues:
         issue_id = issue.get('id')
         due_date = issue.get('fieldValueByName', {}).get('date')
 
