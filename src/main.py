@@ -32,7 +32,7 @@ def notify_due_date_changes():
         # Get the list of assignees
         assignees = issue.get('assignees', {}).get('nodes', [])
 
-        due_date = issue.get('fieldValueByName', {}).get('date')
+        due_date = projectItem.get('fieldValueByName', {}).get('date')
         issue_title = issue['title']
         issue_id = issue['id']
      
