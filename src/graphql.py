@@ -80,61 +80,60 @@ def get_repo_issues(owner, repository, duedate_field_name, after=None, issues=No
     return issues
 
 
-def get_all_issue_comments(issue_id):
-    """
-    Retrieve all comments from an issue.
-
-    Args:
-        issue_id (str): The ID of the issue.
-
-    Returns:
-        list: A list of comment bodies.
-    """
+def get_issue_comments(issue_id):
     query = """
-    query GetAllIssueComments($issueId: ID!, $after: String) {
-      node(id: $issueId) {
-        ... on Issue {
-          comments(first: 100, after: $after) {
-            nodes {
-              body
+    query GetIssueComments($issueId: ID!) {
+        node(id: $issueId) {
+            ... on Issue {
+                comments(first: 100) {
+                    nodes {
+                        body
+                        createdAt
+                        author {
+                            login
+                        }
+                    }
+                    pageInfo {
+                        endCursor
+                        hasNextPage
+                    }
+                }
             }
-            pageInfo {
-              hasNextPage
-              endCursor
-            }
-          }
         }
-      }
     }
     """
 
     variables = {
-        'issueId': issue_id,
-        'after': None
+        'issueId': issue_id
     }
 
-    comments = []
-    while True:
+    try:
         response = requests.post(
             config.api_endpoint,
             json={"query": query, "variables": variables},
             headers={"Authorization": f"Bearer {config.gh_token}"}
         )
+        
+        data = response.json()
 
-        if response.json().get('errors'):
-            logging.error(response.json().get('errors'))
+        if 'errors' in data:
+            logging.error(f"GraphQL query errors: {data['errors']}")
             return []
 
-        nodes = response.json().get('data').get('node').get('comments').get('nodes')
-        comments.extend([comment.get('body') for comment in nodes])
+        comments_data = data.get('data', {}).get('node', {}).get('comments', {})
+        comments = comments_data.get('nodes', [])
 
-        page_info = response.json().get('data').get('node').get('comments').get('pageInfo')
-        if page_info.get('hasNextPage'):
-            variables['after'] = page_info.get('endCursor')
-        else:
-            break
+        # Handle pagination if there are more comments
+        pageinfo = comments_data.get('pageInfo', {})
+        if pageinfo.get('hasNextPage'):
+            next_page_comments = get_issue_comments(issue_id, after=pageinfo.get('endCursor'))
+            comments.extend(next_page_comments)
 
-    return comments
+        return comments
+
+    except requests.RequestException as e:
+        logging.error(f"Request error: {e}")
+        return []
 
 def get_project_issues(owner, owner_type, project_number, duedate_field_name, filters=None, after=None, issues=None):
     query = f"""
