@@ -33,10 +33,11 @@ def notify_due_date_changes():
         assignees = issue.get('assignees', {}).get('nodes', [])
 
         due_date = issue.get('fieldValueByName', {}).get('date')
+        issue_title = issue['title']
         issue_id = issue['id']
 
         if not due_date:
-            logger.info(f'No due date found for issue {issue_id}')
+            logger.info(f'No due date found for issue {issue_title}')
             continue
         
         expected_comment = f"The due date is updated to: {due_date}."
