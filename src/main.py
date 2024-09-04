@@ -60,7 +60,7 @@ def notify_due_date_changes():
                 if not config.dry_run:
                     # Add the comment to the issue
                     graphql.add_issue_comment(issue_id, comment)    
-                logger.info(f'Comment added to issue with title {issue_title}. Due date is {due_date.strftime("%b %d, %Y")}')
+                logger.info(f'Comment added to issue with title {issue_title}. Due date is {due_date}.')
 
 
 def main():
