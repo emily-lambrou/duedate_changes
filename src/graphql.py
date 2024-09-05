@@ -202,12 +202,12 @@ def add_issue_comment(issue_id, comment):
         logging.error(f"Request error: {e}")
         return {}
 
-def get_issue_comments(issue_id):
+def get_issue_comments(issue_id, after=None):
     query = """
-    query GetIssueComments($issueId: ID!) {
+    query GetIssueComments($issueId: ID!, $afterCursor: String) {
         node(id: $issueId) {
             ... on Issue {
-                comments(first: 100) {
+                comments(first: 100, after: $afterCursor) {
                     nodes {
                         body
                         createdAt
@@ -226,7 +226,8 @@ def get_issue_comments(issue_id):
     """
 
     variables = {
-        'issueId': issue_id
+        'issueId': issue_id,
+        'afterCursor': after
     }
 
     try:
