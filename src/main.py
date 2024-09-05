@@ -27,25 +27,28 @@ def notify_due_date_changes():
         return
 
     for projectItem in issues:
-        issue = projectItem['content']
+        # Safely extract 'content' from projectItem
+        issue = projectItem.get('content')
+        if not issue:
+            logger.error(f"Missing 'content' in project item: {projectItem}")
+            continue
 
         # Get the list of assignees
         assignees = issue.get('assignees', {}).get('nodes', [])
-
+        
         # Get the due date value
         due_date = None
         due_date_obj = None
         try:
-            if projectItem:
-                due_date = projectItem.get('fieldValueByName', {}).get('date')
-                if due_date:
-                    due_date_obj = datetime.strptime(due_date, "%Y-%m-%d").date()
+            due_date = projectItem.get('fieldValueByName', {}).get('date')
+            if due_date:
+                due_date_obj = datetime.strptime(due_date, "%Y-%m-%d").date()
         except (AttributeError, ValueError) as e:
-            logger.error(f"Error processing due date for issue {issue['title']}: {e}")
+            logger.error(f"Error processing due date for issue {issue.get('title', 'Unknown Title')} (ID: {issue.get('id', 'Unknown ID')}): {e}")
             continue  # Skip this issue and move to the next
 
-        issue_title = issue['title']
-        issue_id = issue['id']
+        issue_title = issue.get('title', 'Unknown Title')
+        issue_id = issue.get('id', 'Unknown ID')
 
         if not due_date_obj:
             logger.info(f'No due date found for issue {issue_title}')
@@ -64,9 +67,14 @@ def notify_due_date_changes():
                 )
                 
                 if not config.dry_run:
-                    # Add the comment to the issue
-                    graphql.add_issue_comment(issue_id, comment)    
-                logger.info(f'Comment added to issue with title {issue_title}. Due date is {due_date_obj}.')
+                    try:
+                        # Add the comment to the issue
+                        graphql.add_issue_comment(issue_id, comment)
+                        logger.info(f'Comment added to issue with title {issue_title}. Due date is {due_date_obj}.')
+                    except Exception as e:
+                        logger.error(f"Failed to add comment to issue {issue_title} (ID: {issue_id}): {e}")
+                else:
+                    logger.info(f'DRY RUN: Comment prepared for issue with title {issue_title}. Due date is {due_date_obj}.')
 
 def main():
     logger.info('Process started...')
