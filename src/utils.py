@@ -11,7 +11,7 @@ def prepare_duedate_comment(issue: dict, assignees: dict, due_date):
     comment = ''
     if assignees:
         for assignee in assignees:
-            comment += f'@{assignee["login"]} '
+            comment += f'{assignee["login"]} '
     else:
         logger.info(f'No assignees found for issue #{issue["number"]}')
 
