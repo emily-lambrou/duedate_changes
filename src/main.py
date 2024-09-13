@@ -44,7 +44,6 @@ def notify_due_date_changes():
             if due_date:
                 due_date_obj = datetime.strptime(due_date, "%Y-%m-%d").date()
         except (AttributeError, ValueError) as e:
-            logger.error(f"Error processing due date for issue {issue.get('title', 'Unknown Title')} (ID: {issue.get('id', 'Unknown ID')}): {e}")
             continue  # Skip this issue and move to the next
 
         issue_title = issue.get('title', 'Unknown Title')
